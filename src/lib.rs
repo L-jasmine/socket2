@@ -170,22 +170,27 @@ macro_rules! man_links {
     };
 }
 
+#[cfg(not(target_os = "wasi"))]
 mod sockaddr;
 mod socket;
 mod sockref;
 
 #[cfg_attr(unix, path = "sys/unix.rs")]
 #[cfg_attr(windows, path = "sys/windows.rs")]
+#[cfg_attr(target_os = "wasi", path = "sys/wasmedge_wasi.rs")]
 mod sys;
 
-#[cfg(not(any(windows, unix)))]
+#[cfg(not(any(windows, unix, target_os = "wasi")))]
 compile_error!("Socket2 doesn't support the compile target");
 
 use sys::c_int;
 
+#[cfg(any(unix, windows))]
 pub use sockaddr::SockAddr;
 pub use socket::Socket;
 pub use sockref::SockRef;
+#[cfg(target_os = "wasi")]
+pub use std::net::SocketAddr as SockAddr;
 
 #[cfg(not(any(
     target_os = "haiku",
@@ -215,6 +220,7 @@ impl Domain {
     /// Domain for IPv6 communication, corresponding to `AF_INET6`.
     pub const IPV6: Domain = Domain(sys::AF_INET6);
 
+    #[cfg(not(target_os = "wasi"))]
     /// Domain for Unix socket communication, corresponding to `AF_UNIX`.
     pub const UNIX: Domain = Domain(sys::AF_UNIX);
 
@@ -270,15 +276,24 @@ impl Type {
     pub const DCCP: Type = Type(sys::SOCK_DCCP);
 
     /// Type corresponding to `SOCK_SEQPACKET`.
-    #[cfg(all(feature = "all", not(target_os = "espidf")))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "all", not(target_os = "espidf")))))]
+    #[cfg(all(feature = "all", not(target_os = "espidf"), not(target_os = "wasi")))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "all", not(target_os = "espidf"), not(target_os = "wasi"))))
+    )]
     pub const SEQPACKET: Type = Type(sys::SOCK_SEQPACKET);
 
     /// Type corresponding to `SOCK_RAW`.
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "wasi"))
+    ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "wasi"))
+        )))
     )]
     pub const RAW: Type = Type(sys::SOCK_RAW);
 }
@@ -306,9 +321,11 @@ impl From<Type> for c_int {
 pub struct Protocol(c_int);
 
 impl Protocol {
+    #[cfg(not(target_os = "wasi"))]
     /// Protocol corresponding to `ICMPv4`.
     pub const ICMPV4: Protocol = Protocol(sys::IPPROTO_ICMP);
 
+    #[cfg(not(target_os = "wasi"))]
     /// Protocol corresponding to `ICMPv6`.
     pub const ICMPV6: Protocol = Protocol(sys::IPPROTO_ICMPV6);
 

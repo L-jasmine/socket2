@@ -427,6 +427,7 @@ impl Socket {
     ///
     /// [`recv`]: Socket::recv
     /// [`out_of_band_inline`]: Socket::out_of_band_inline
+    #[cfg(not(target_os = "wasi"))]
     #[cfg_attr(target_os = "redox", allow(rustdoc::broken_intra_doc_links))]
     pub fn recv_out_of_band(&self, buf: &mut [MaybeUninit<u8>]) -> io::Result<usize> {
         self.recv_with_flags(buf, sys::MSG_OOB)
@@ -636,8 +637,11 @@ impl Socket {
     /// <https://github.com/microsoft/Windows-classic-samples/blob/7cbd99ac1d2b4a0beffbaba29ea63d024ceff700/Samples/Win7Samples/netds/winsock/recvmsg/rmmc.cpp>
     /// for an example (in C++).
     #[doc = man_links!(recvmsg(2))]
-    #[cfg(all(unix, not(target_os = "redox")))]
-    #[cfg_attr(docsrs, doc(cfg(all(unix, not(target_os = "redox")))))]
+    #[cfg(all(unix, not(target_os = "redox"), not(target_os = "wasi")))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(unix, not(target_os = "redox"), not(target_os = "wasi"))))
+    )]
     pub fn recvmsg(&self, msg: &mut MsgHdrMut<'_, '_, '_>, flags: sys::c_int) -> io::Result<usize> {
         sys::recvmsg(self.as_raw(), msg, flags)
     }
@@ -690,6 +694,7 @@ impl Socket {
     ///
     /// [`send`]: Socket::send
     /// [`out_of_band_inline`]: Socket::out_of_band_inline
+    #[cfg(not(target_os = "wasi"))]
     #[cfg_attr(target_os = "redox", allow(rustdoc::broken_intra_doc_links))]
     pub fn send_out_of_band(&self, buf: &[u8]) -> io::Result<usize> {
         self.send_with_flags(buf, sys::MSG_OOB)
@@ -1112,10 +1117,16 @@ impl Socket {
     /// For more information about this option, see [`set_header_included`].
     ///
     /// [`set_header_included`]: Socket::set_header_included
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "wasi"))
+    ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "wasi"))
+        )))
     )]
     pub fn header_included(&self) -> io::Result<bool> {
         unsafe {
@@ -1139,7 +1150,10 @@ impl Socket {
         any(target_os = "fuchsia", target_os = "illumos", target_os = "solaris"),
         allow(rustdoc::broken_intra_doc_links)
     )]
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "wasi"))
+    ))]
     #[cfg_attr(
         docsrs,
         doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
@@ -1204,6 +1218,7 @@ impl Socket {
     /// address of the local interface with which the system should join the
     /// multicast group. If it's [`Ipv4Addr::UNSPECIFIED`] (`INADDR_ANY`) then
     /// an appropriate interface is chosen by the system.
+    #[cfg(not(target_os = "wasi"))]
     pub fn join_multicast_v4(&self, multiaddr: &Ipv4Addr, interface: &Ipv4Addr) -> io::Result<()> {
         let mreq = sys::IpMreq {
             imr_multiaddr: sys::to_in_addr(multiaddr),
@@ -1217,6 +1232,7 @@ impl Socket {
     /// For more information about this option, see [`join_multicast_v4`].
     ///
     /// [`join_multicast_v4`]: Socket::join_multicast_v4
+    #[cfg(not(target_os = "wasi"))]
     pub fn leave_multicast_v4(&self, multiaddr: &Ipv4Addr, interface: &Ipv4Addr) -> io::Result<()> {
         let mreq = sys::IpMreq {
             imr_multiaddr: sys::to_in_addr(multiaddr),
@@ -1249,6 +1265,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn join_multicast_v4_n(
         &self,
@@ -1282,6 +1299,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn leave_multicast_v4_n(
         &self,
@@ -1317,6 +1335,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn join_ssm_v4(
         &self,
@@ -1355,6 +1374,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn leave_ssm_v4(
         &self,
@@ -1419,6 +1439,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_if_v4`].
     ///
     /// [`set_multicast_if_v4`]: Socket::set_multicast_if_v4
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_if_v4(&self) -> io::Result<Ipv4Addr> {
         unsafe {
             getsockopt(self.as_raw(), sys::IPPROTO_IP, sys::IP_MULTICAST_IF).map(sys::from_in_addr)
@@ -1428,6 +1449,7 @@ impl Socket {
     /// Set the value of the `IP_MULTICAST_IF` option for this socket.
     ///
     /// Specifies the interface to use for routing multicast packets.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_if_v4(&self, interface: &Ipv4Addr) -> io::Result<()> {
         let interface = sys::to_in_addr(interface);
         unsafe {
@@ -1445,6 +1467,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_loop_v4`].
     ///
     /// [`set_multicast_loop_v4`]: Socket::set_multicast_loop_v4
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_loop_v4(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IP, sys::IP_MULTICAST_LOOP)
@@ -1456,6 +1479,7 @@ impl Socket {
     ///
     /// If enabled, multicast packets will be looped back to the local socket.
     /// Note that this may not have any affect on IPv6 sockets.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_loop_v4(&self, loop_v4: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1472,6 +1496,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_ttl_v4`].
     ///
     /// [`set_multicast_ttl_v4`]: Socket::set_multicast_ttl_v4
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_ttl_v4(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IP, sys::IP_MULTICAST_TTL)
@@ -1486,6 +1511,7 @@ impl Socket {
     /// don't leave the local network unless explicitly requested.
     ///
     /// Note that this may not have any affect on IPv6 sockets.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_ttl_v4(&self, ttl: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1529,6 +1555,7 @@ impl Socket {
         target_os = "solaris",
         target_os = "illumos",
         target_os = "haiku",
+        target_os = "wasi",
     )))]
     pub fn set_tos(&self, tos: u32) -> io::Result<()> {
         unsafe { setsockopt(self.as_raw(), sys::IPPROTO_IP, sys::IP_TOS, tos as c_int) }
@@ -1548,6 +1575,7 @@ impl Socket {
         target_os = "solaris",
         target_os = "illumos",
         target_os = "haiku",
+        target_os = "wasi",
     )))]
     pub fn tos(&self) -> io::Result<u32> {
         unsafe {
@@ -1574,6 +1602,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn set_recv_tos(&self, recv_tos: bool) -> io::Result<()> {
         unsafe {
@@ -1605,6 +1634,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn recv_tos(&self) -> io::Result<bool> {
         unsafe {
@@ -1627,7 +1657,7 @@ impl Socket {
     /// This function specifies a new multicast group for this socket to join.
     /// The address must be a valid multicast address, and `interface` is the
     /// index of the interface to join/leave (or 0 to indicate any interface).
-    #[cfg(not(target_os = "nto"))]
+    #[cfg(not(any(target_os = "nto", target_os = "wasi")))]
     pub fn join_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
         let mreq = sys::Ipv6Mreq {
             ipv6mr_multiaddr: sys::to_in6_addr(multiaddr),
@@ -1651,7 +1681,7 @@ impl Socket {
     /// For more information about this option, see [`join_multicast_v6`].
     ///
     /// [`join_multicast_v6`]: Socket::join_multicast_v6
-    #[cfg(not(target_os = "nto"))]
+    #[cfg(not(any(target_os = "nto", target_os = "wasi")))]
     pub fn leave_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
         let mreq = sys::Ipv6Mreq {
             ipv6mr_multiaddr: sys::to_in6_addr(multiaddr),
@@ -1673,6 +1703,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_hops_v6`].
     ///
     /// [`set_multicast_hops_v6`]: Socket::set_multicast_hops_v6
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_HOPS)
@@ -1685,6 +1716,7 @@ impl Socket {
     /// Indicates the number of "routers" multicast packets will transit for
     /// this socket. The default value is 1 which means that multicast packets
     /// don't leave the local network unless explicitly requested.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1738,6 +1770,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_if_v6`].
     ///
     /// [`set_multicast_if_v6`]: Socket::set_multicast_if_v6
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_if_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_IF)
@@ -1750,6 +1783,7 @@ impl Socket {
     /// Specifies the interface to use for routing multicast packets. Unlike
     /// ipv4, this is generally required in ipv6 contexts where network routing
     /// prefixes may overlap.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_if_v6(&self, interface: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1766,6 +1800,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_loop_v6`].
     ///
     /// [`set_multicast_loop_v6`]: Socket::set_multicast_loop_v6
+    #[cfg(not(target_os = "wasi"))]
     pub fn multicast_loop_v6(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_LOOP)
@@ -1777,6 +1812,7 @@ impl Socket {
     ///
     /// Controls whether this socket sees the multicast packets it sends itself.
     /// Note that this may not have any affect on IPv4 sockets.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_multicast_loop_v6(&self, loop_v6: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1791,6 +1827,7 @@ impl Socket {
     /// Get the value of the `IPV6_UNICAST_HOPS` option for this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "wasi"))]
     pub fn unicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_UNICAST_HOPS)
@@ -1801,6 +1838,7 @@ impl Socket {
     /// Set the value for the `IPV6_UNICAST_HOPS` option on this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_unicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1817,6 +1855,7 @@ impl Socket {
     /// For more information about this option, see [`set_only_v6`].
     ///
     /// [`set_only_v6`]: Socket::set_only_v6
+    #[cfg(not(target_os = "wasi"))]
     pub fn only_v6(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_V6ONLY)
@@ -1832,6 +1871,7 @@ impl Socket {
     ///
     /// If this is set to `false` then the socket can be used to send and
     /// receive packets from an IPv4-mapped IPv6 address.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_only_v6(&self, only_v6: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1860,6 +1900,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn recv_tclass_v6(&self) -> io::Result<bool> {
         unsafe {
@@ -1885,6 +1926,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "wasi",
     )))]
     pub fn set_recv_tclass_v6(&self, recv_tclass: bool) -> io::Result<()> {
         unsafe {
@@ -1914,7 +1956,8 @@ impl Socket {
             windows,
             target_os = "haiku",
             target_os = "openbsd",
-            target_os = "vita"
+            target_os = "vita",
+            target_os = "wasi",
         ))
     ))]
     #[cfg_attr(
@@ -1925,7 +1968,8 @@ impl Socket {
                 windows,
                 target_os = "haiku",
                 target_os = "openbsd",
-                target_os = "vita"
+                target_os = "vita",
+                target_os = "wasi",
             ))
         )))
     )]
@@ -2065,6 +2109,7 @@ impl Socket {
     /// # Ok(()) }
     /// ```
     ///
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_tcp_keepalive(&self, params: &TcpKeepalive) -> io::Result<()> {
         self.set_keepalive(true)?;
         sys::set_tcp_keepalive(self.as_raw(), params)
@@ -2075,6 +2120,7 @@ impl Socket {
     /// For more information about this option, see [`set_nodelay`].
     ///
     /// [`set_nodelay`]: Socket::set_nodelay
+    #[cfg(not(target_os = "wasi"))]
     pub fn nodelay(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<Bool>(self.as_raw(), sys::IPPROTO_TCP, sys::TCP_NODELAY)
@@ -2089,6 +2135,7 @@ impl Socket {
     /// small amount of data. When not set, data is buffered until there is a
     /// sufficient amount to send out, thereby avoiding the frequent sending of
     /// small packets.
+    #[cfg(not(target_os = "wasi"))]
     pub fn set_nodelay(&self, nodelay: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
